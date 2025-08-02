@@ -1,6 +1,11 @@
-import { Runware } from "@runware/sdk-js";
+import { Runware, type IVideoToImage } from "@runware/sdk-js";
 
-async function generateVideo(positivePrompt: string): Promise<string | undefined> {
+export const generateVideo = async (
+  positivePrompt: string,
+): Promise<{
+  success: boolean;
+  url?: string;
+}> => {
   const runware = new Runware({ apiKey: process.env.RUNWARE_API_KEY! });
 
   const videos = await runware.videoInference({
@@ -12,17 +17,16 @@ async function generateVideo(positivePrompt: string): Promise<string | undefined
     fps: 24, // Frames per second
   });
 
-  if (videos && videos.length > 0) {
-    return videos[0].videoURL;
-  }
-}
+  let video: IVideoToImage;
+  if (Array.isArray(videos) && videos.length > 0 && videos[0] !== undefined) {
+    video = videos[0];
 
-// Example usage:
-const prompt = "A dog climbing a tree in mountain equipment";
-generateVideo(prompt).then(videoUrl => {
-  if (videoUrl) {
-    console.log("Generated video:", videoUrl);
-  } else {
-    console.log("Failed to generate video.");
+    return {
+      success: true,
+      url: video.videoURL,
+    };
   }
-});
+
+  return { success: false };
+};
+
