@@ -47,7 +47,6 @@ export const gameRound = createTable(
     gameId: d
       .uuid()
       .notNull()
-      .defaultRandom()
       .references(() => game.id, { onDelete: "cascade" }),
     createdAt: d
       .timestamp({ withTimezone: true })
