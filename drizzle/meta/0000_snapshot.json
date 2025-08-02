@@ -1,5 +1,5 @@
 {
-  "id": "716baf22-4fb5-465a-a8bb-f180ac65a7ff",
+  "id": "399aca92-7f9d-4201-92c5-278c8b8ab2c2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -20,13 +20,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "currentGameRound": {
-          "name": "currentGameRound",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "createdAt": {
           "name": "createdAt",
@@ -82,13 +75,8 @@
           "name": "gameId",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
-        },
-        "roundNumber": {
-          "name": "roundNumber",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "createdAt": {
           "name": "createdAt",
@@ -297,9 +285,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "gameRound": {
-          "name": "gameRound",
-          "type": "integer",
+        "gameId": {
+          "name": "gameId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gameRoundId": {
+          "name": "gameRoundId",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -337,7 +331,7 @@
           "name": "submission_game_round_idx",
           "columns": [
             {
-              "expression": "gameRound",
+              "expression": "gameRoundId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -356,6 +350,32 @@
           "tableTo": "test_session",
           "columnsFrom": [
             "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "test_submission_gameId_test_game_id_fk": {
+          "name": "test_submission_gameId_test_game_id_fk",
+          "tableFrom": "test_submission",
+          "tableTo": "test_game",
+          "columnsFrom": [
+            "gameId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "test_submission_gameRoundId_test_game_round_id_fk": {
+          "name": "test_submission_gameRoundId_test_game_round_id_fk",
+          "tableFrom": "test_submission",
+          "tableTo": "test_game_round",
+          "columnsFrom": [
+            "gameRoundId"
           ],
           "columnsTo": [
             "id"
@@ -387,15 +407,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "gameRoundId": {
-          "name": "gameRoundId",
+        "submissionId": {
+          "name": "submissionId",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "voteValue": {
-          "name": "voteValue",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true
         }
@@ -416,11 +430,11 @@
           "method": "btree",
           "with": {}
         },
-        "vote_game_round_idx": {
-          "name": "vote_game_round_idx",
+        "vote_submission_idx": {
+          "name": "vote_submission_idx",
           "columns": [
             {
-              "expression": "gameRoundId",
+              "expression": "submissionId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -446,12 +460,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "test_vote_gameRoundId_test_game_round_id_fk": {
-          "name": "test_vote_gameRoundId_test_game_round_id_fk",
+        "test_vote_submissionId_test_submission_id_fk": {
+          "name": "test_vote_submissionId_test_submission_id_fk",
           "tableFrom": "test_vote",
-          "tableTo": "test_game_round",
+          "tableTo": "test_submission",
           "columnsFrom": [
-            "gameRoundId"
+            "submissionId"
           ],
           "columnsTo": [
             "id"
