@@ -8,7 +8,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3002";
 const QRCodeSection = () => {
   const { data, isLoading, error } = api.game.new.useQuery();
   const gameId = data?.id ?? "";
-  const qrValue = gameId ? `${baseUrl}/game/${gameId}` : "";
+  const qrValue = gameId ? `${baseUrl}/join-game/${gameId}` : "";
 
   if (isLoading) return <div>Loading QR Code...</div>;
   if (error || !data?.id) return <div>Failed to load QR Code.</div>;
