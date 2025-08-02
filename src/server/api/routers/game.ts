@@ -80,5 +80,22 @@ export const gameRouter = createTRPCRouter({
           .where(eq(game.id, sessionExists.gameId));
       });
     }),
-  // getResults: publicProcedure.query(async ({ ctx }) => {}),
+  
+    end: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const endGame = await ctx.db
+      .update(game)
+      .set({ isActive: false })
+      .where(eq(game.id, input.gameId))
+      .returning();
+      
+      if (endGame.length === 0) {
+        throw new Error("Game not found");
+      }
+      
+      return { success: true, game: endGame[0] };
+      
+    }),
+    // getResults: publicProcedure.query(async ({ ctx }) => {}),
 });
