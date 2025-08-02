@@ -7,7 +7,7 @@ CREATE TABLE "test_game" (
 --> statement-breakpoint
 CREATE TABLE "test_game_round" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"gameId" uuid DEFAULT gen_random_uuid() NOT NULL,
+	"gameId" uuid NOT NULL,
 	"createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	"content" text NOT NULL
 );

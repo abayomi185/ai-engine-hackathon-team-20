@@ -1,5 +1,5 @@
 {
-  "id": "399aca92-7f9d-4201-92c5-278c8b8ab2c2",
+  "id": "6e4acbf7-388c-4414-9ca3-f1363f16a750",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -75,8 +75,7 @@
           "name": "gameId",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "createdAt": {
           "name": "createdAt",
