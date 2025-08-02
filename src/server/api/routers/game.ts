@@ -27,7 +27,7 @@ export const gameRouter = createTRPCRouter({
         .values({
           gameId: input.gameId,
           isPlayer: playerRoleIsAvailable,
-          avatar: `https://avatars.dicebear.com/api/initials/${userId}.svg`,
+          avatar: "",
         })
         .returning();
 
