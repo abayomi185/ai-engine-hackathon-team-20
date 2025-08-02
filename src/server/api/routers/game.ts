@@ -311,6 +311,7 @@ export const gameRouter = createTRPCRouter({
 
       return {
         isActive: gameInstance.isActive,
+        game: gameInstance,
         latestRound: latestRound,
       };
     }),
