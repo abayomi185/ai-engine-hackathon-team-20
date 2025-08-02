@@ -1,13 +1,28 @@
 import { Runware } from "@runware/sdk-js";
 
-import { env } from "~/env";
-const runware = new Runware({ apiKey: env.RUNWARE_API_KEY });
+async function generateVideo(positivePrompt: string): Promise<string | undefined> {
+  const runware = new Runware({ apiKey: process.env.RUNWARE_API_KEY! });
 
-const images = await runware.requestImages({
-  positivePrompt: "A serene mountain landscape at sunset",
-  model: "runware:101@1",
-  width: 1024,
-  height: 1024,
+  const videos = await runware.videoInference({
+    positivePrompt,
+    model: "bytedance:1@1",
+    width: 864,
+    height: 480,
+    duration: 5, // Duration of the video in seconds
+    fps: 24, // Frames per second
+  });
+
+  if (videos && videos.length > 0) {
+    return videos[0].videoURL;
+  }
+}
+
+// Example usage:
+const prompt = "A dog climbing a tree in mountain equipment";
+generateVideo(prompt).then(videoUrl => {
+  if (videoUrl) {
+    console.log("Generated video:", videoUrl);
+  } else {
+    console.log("Failed to generate video.");
+  }
 });
-
-console.log("Generated image:", images[0].imageURL);
