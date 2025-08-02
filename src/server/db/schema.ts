@@ -15,7 +15,7 @@ export const createTable = pgTableCreator((name) => `test_${name}`);
 export const posts = createTable(
   "post",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    id: d.uuid().primaryKey().defaultRandom(),
     name: d.varchar({ length: 256 }),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -29,7 +29,7 @@ export const posts = createTable(
 export const game = createTable(
   "game",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    id: d.uuid().primaryKey().defaultRandom(),
     name: d.text().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -43,8 +43,8 @@ export const game = createTable(
 export const gameRound = createTable(
   "game_round",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    gameId: d.integer().notNull(),
+    id: d.uuid().primaryKey().defaultRandom(),
+    gameId: d.uuid().notNull(),
     roundNumber: d.integer().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -58,8 +58,8 @@ export const gameRound = createTable(
 export const session = createTable(
   "session",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    gameId: d.integer(),
+    id: d.uuid().primaryKey().defaultRandom(),
+    gameId: d.uuid(),
     isPlayer: d.boolean().notNull().default(false),
     avatar: d.text().notNull().default(""),
     createdAt: d
@@ -73,9 +73,9 @@ export const session = createTable(
 export const submission = createTable(
   "submission",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    sessionId: d.integer().notNull(),
-    gameRound: d.integer().notNull(),
+    id: d.uuid().primaryKey().defaultRandom(),
+    sessionId: d.uuid().notNull(),
+    gameRound: d.uuid().notNull(),
     content: d.text().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -91,9 +91,9 @@ export const submission = createTable(
 export const vote = createTable(
   "vote",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    sessionId: d.integer().notNull(),
-    gameRoundId: d.integer().notNull(),
+    id: d.uuid().primaryKey().defaultRandom(),
+    sessionId: d.uuid().notNull(),
+    gameRoundId: d.uuid().notNull(),
     voteValue: d.integer().notNull(),
   }),
   (t) => [
