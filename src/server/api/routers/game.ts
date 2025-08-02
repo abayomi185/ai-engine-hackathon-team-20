@@ -16,7 +16,7 @@ export const gameRouter = createTRPCRouter({
   }),
 
   join: publicProcedure
-    .input(z.object({ gameId: z.string() }))
+    .input(z.object({ name: z.string(), gameId: z.string() }))
     .query(async ({ ctx, input }) => {
       const playerSessions = await ctx.db.query.session.findMany({
         where: and(
@@ -30,6 +30,7 @@ export const gameRouter = createTRPCRouter({
       const newSession = await ctx.db
         .insert(session)
         .values({
+          name: input.name,
           gameId: input.gameId,
           isPlayer: playerRoleIsAvailable,
           avatar: "",
@@ -39,6 +40,45 @@ export const gameRouter = createTRPCRouter({
       return {
         ...newSession[0],
       };
+    }),
+
+  submit: publicProcedure
+    .input(z.object({ content: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const sessionId = ctx.headers.get("sessionId");
+      if (!sessionId) {
+        throw new Error("Session ID is required");
+      }
+
+      await ctx.db.transaction(async (tx) => {
+        const sessionExists = await tx.query.session.findFirst({
+          where: eq(session.id, sessionId),
+        });
+
+        if (!sessionExists?.gameId) {
+          throw new Error("Session not found or does not have a gameId");
+        }
+        // Check if game is active
+        const gameInstance = await tx.query.game.findFirst({
+          where: eq(game.id, sessionExists.gameId),
+        });
+
+        if (!gameInstance?.isActive) {
+          throw new Error("Game is not active");
+        }
+
+        // Create a new submission
+        const newSubmission = await tx
+          .insert(submission)
+          .values({
+            sessionId,
+            content: input.content,
+            gameRound: gameInstance.currentGameRound,
+          })
+          .returning();
+
+        return { ...newSubmission };
+      });
     }),
 
   vote: publicProcedure
@@ -57,7 +97,6 @@ export const gameRouter = createTRPCRouter({
         if (!sessionExists?.gameId) {
           throw new Error("Session not found or does not have a gameId");
         }
-
         // Check if game is active
         const gameInstance = await tx.query.game.findFirst({
           where: eq(game.id, sessionExists.gameId),
@@ -96,5 +135,42 @@ export const gameRouter = createTRPCRouter({
 
       return { success: true, game: endGame[0] };
     }),
-  // getResults: publicProcedure.query(async ({ ctx }) => {}),
+  results: publicProcedure.query(async ({ ctx }) => {
+    const sessionId = ctx.headers.get("sessionId");
+    if (!sessionId) {
+      throw new Error("Session ID is required");
+    }
+
+    const sessionData = await ctx.db.query.session.findFirst({
+      where: eq(session.id, sessionId),
+    });
+
+    if (!sessionData?.gameId) {
+      throw new Error("Session not found");
+    }
+
+    // Get all submissions for the game
+    const submissions = await ctx.db.query.submission.findMany({
+      where: eq(submission.sessionId, sessionData.gameId),
+    });
+
+    // Get all votes for the game
+    const votes = await ctx.db.query.vote.findMany({
+      where: eq(vote.gameId, sessionData.gameId),
+    });
+
+    // Aggregate votes per submission
+    const results = submissions.map((sub) => {
+      const subVotes = votes.filter((v) => v.submissionId === sub.id);
+      return {
+        submission: sub,
+        voteCount: subVotes.length,
+      };
+    });
+
+    // Sort results by voteCount descending
+    results.sort((a, b) => b.voteCount - a.voteCount);
+
+    return { results };
+  }),
 });
