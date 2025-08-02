@@ -1,5 +1,5 @@
 {
-  "id": "6d2f0438-2a84-4607-a734-074ad3e75b90",
+  "id": "88b8dd54-6200-47a8-ac91-235e679bd215",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -73,7 +73,7 @@
         },
         "gameId": {
           "name": "gameId",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -114,7 +114,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "test_game_round_gameId_test_game_id_fk": {
+          "name": "test_game_round_gameId_test_game_id_fk",
+          "tableFrom": "test_game_round",
+          "tableTo": "test_game",
+          "columnsFrom": [
+            "gameId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -189,7 +203,7 @@
         },
         "gameId": {
           "name": "gameId",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -232,7 +246,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "test_session_gameId_test_game_id_fk": {
+          "name": "test_session_gameId_test_game_id_fk",
+          "tableFrom": "test_session",
+          "tableTo": "test_game",
+          "columnsFrom": [
+            "gameId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -252,13 +280,13 @@
         },
         "sessionId": {
           "name": "sessionId",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "gameRound": {
           "name": "gameRound",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -308,7 +336,34 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "test_submission_sessionId_test_session_id_fk": {
+          "name": "test_submission_sessionId_test_session_id_fk",
+          "tableFrom": "test_submission",
+          "tableTo": "test_session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "test_submission_gameRound_test_game_round_id_fk": {
+          "name": "test_submission_gameRound_test_game_round_id_fk",
+          "tableFrom": "test_submission",
+          "tableTo": "test_game_round",
+          "columnsFrom": [
+            "gameRound"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -377,7 +432,34 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "test_vote_sessionId_test_session_id_fk": {
+          "name": "test_vote_sessionId_test_session_id_fk",
+          "tableFrom": "test_vote",
+          "tableTo": "test_session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "test_vote_gameRoundId_test_game_round_id_fk": {
+          "name": "test_vote_gameRoundId_test_game_round_id_fk",
+          "tableFrom": "test_vote",
+          "tableTo": "test_game_round",
+          "columnsFrom": [
+            "gameRoundId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
