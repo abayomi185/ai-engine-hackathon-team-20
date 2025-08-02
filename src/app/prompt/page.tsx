@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "~/components/ui/input"; // shadcn input
-import { Label } from "~/components/ui/label"; // shadcn label
-import { Button } from "~/components/ui/button"; // shadcn button
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import { api } from "~/trpc/react";
 
-export function Prompt() {
+export default function Prompt() {
   // State to hold the value of the input box
   const [prompt, setPrompt] = useState("");
 
