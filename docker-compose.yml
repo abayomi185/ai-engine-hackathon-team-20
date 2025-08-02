@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    platform: linux/arm64
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aiengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiengine}
+      POSTGRES_DB: ${POSTGRES_DB:-aiengine}
+    ports:
+      - "${POSTGRES_PORT:-5455}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiengine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
