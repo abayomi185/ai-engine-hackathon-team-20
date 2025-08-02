@@ -63,6 +63,7 @@ export const session = createTable(
   "session",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
+    name: d.text().notNull(),
     gameId: d.uuid().references(() => game.id, { onDelete: "set null" }),
     isPlayer: d.boolean().notNull().default(false),
     avatar: d.text().notNull().default(""),
