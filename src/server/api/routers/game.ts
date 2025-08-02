@@ -10,9 +10,12 @@ const MAX_GAME_ROUNDS = 3;
 
 export const gameRouter = createTRPCRouter({
   new: publicProcedure.query(async ({ ctx }) => {
-    const newGame = await ctx.db.insert(game).values({
-      name: `${getRandomWord()} ${getRandomWord()}`,
-    });
+    const newGame = await ctx.db
+      .insert(game)
+      .values({
+        name: `${getRandomWord()} ${getRandomWord()}`,
+      })
+      .returning();
 
     const randomIndex = Math.floor(Math.random() * GAME_THEME_PROMPTS.length);
     const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
@@ -21,8 +24,7 @@ export const gameRouter = createTRPCRouter({
       content: randomPrompt,
     });
 
-    const { id } = newGame[0]!;
-    return { id };
+    return newGame[0];
   }),
 
   next: publicProcedure
