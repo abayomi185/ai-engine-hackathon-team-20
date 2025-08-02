@@ -3,17 +3,55 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { game, session, gameRound, vote, submission } from "~/server/db/schema";
 import { and, eq } from "drizzle-orm";
+import { GAME_THEME_PROMPTS } from "~/server/constant/prompts";
+import { getRandomWord } from "~/server/constant/words";
+
+const MAX_GAME_ROUNDS = 3;
 
 export const gameRouter = createTRPCRouter({
   new: publicProcedure.query(async ({ ctx }) => {
     const newGame = await ctx.db.insert(game).values({
-      name: "",
-      currentGameRound: 0,
+      name: `${getRandomWord()} ${getRandomWord()}`,
+    });
+
+    const randomIndex = Math.floor(Math.random() * GAME_THEME_PROMPTS.length);
+    const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
+
+    await ctx.db.insert(gameRound).values({
+      content: randomPrompt,
     });
 
     const { id } = newGame[0]!;
     return { id };
   }),
+
+  next: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // 1. Check if game exists and is active
+      const gameInstance = await ctx.db.query.game.findFirst({
+        where: eq(game.id, input.gameId),
+      });
+      if (!gameInstance?.isActive) {
+        throw new Error("Game not found or not active");
+      }
+
+      // 2. Pick a random prompt
+      const randomIndex = Math.floor(Math.random() * GAME_THEME_PROMPTS.length);
+      const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
+
+      // 3. Create a new round
+      const newRound = await ctx.db
+        .insert(gameRound)
+        .values({
+          gameId: input.gameId,
+          content: randomPrompt,
+        })
+        .returning();
+
+      // 4. Return new round info
+      return newRound[0];
+    }),
 
   join: publicProcedure
     .input(z.object({ name: z.string(), gameId: z.string() }))
@@ -37,9 +75,7 @@ export const gameRouter = createTRPCRouter({
         })
         .returning();
 
-      return {
-        ...newSession[0],
-      };
+      return newSession[0];
     }),
 
   submit: publicProcedure
@@ -67,22 +103,32 @@ export const gameRouter = createTRPCRouter({
           throw new Error("Game is not active");
         }
 
+        const latestGameRound = await ctx.db.query.gameRound.findFirst({
+          where: eq(gameRound.gameId, gameInstance.id),
+          orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
+        });
+
+        if (!latestGameRound) {
+          throw new Error("No game rounds found for the current game");
+        }
+
         // Create a new submission
         const newSubmission = await tx
           .insert(submission)
           .values({
             sessionId,
             content: input.content,
-            gameRound: gameInstance.currentGameRound,
+            gameId: gameInstance.id,
+            gameRoundId: latestGameRound.id,
           })
           .returning();
 
-        return { ...newSubmission };
+        return newSubmission;
       });
     }),
 
   vote: publicProcedure
-    .input(z.object({ voteValue: z.number() }))
+    .input(z.object({ submissionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const sessionId = ctx.headers.get("sessionId");
       if (!sessionId) {
@@ -108,15 +154,8 @@ export const gameRouter = createTRPCRouter({
 
         await tx.insert(vote).values({
           sessionId: sessionId,
-          gameRoundId: gameInstance.id,
-          voteValue: input.voteValue,
+          submissionId: input.submissionId,
         });
-
-        // Increment the current game round
-        await tx
-          .update(game)
-          .set({ currentGameRound: gameInstance.currentGameRound + 1 })
-          .where(eq(game.id, sessionExists.gameId));
       });
     }),
 
@@ -133,9 +172,10 @@ export const gameRouter = createTRPCRouter({
         throw new Error("Game not found");
       }
 
-      return { success: true, game: endGame[0] };
+      return endGame[0];
     }),
-  results: publicProcedure.query(async ({ ctx }) => {
+
+  roundResults: publicProcedure.query(async ({ ctx }) => {
     const sessionId = ctx.headers.get("sessionId");
     if (!sessionId) {
       throw new Error("Session ID is required");
@@ -149,28 +189,122 @@ export const gameRouter = createTRPCRouter({
       throw new Error("Session not found");
     }
 
-    // Get all submissions for the game
-    const submissions = await ctx.db.query.submission.findMany({
-      where: eq(submission.sessionId, sessionData.gameId),
+    const currentGameRound = await ctx.db.query.gameRound.findFirst({
+      where: eq(gameRound.gameId, sessionData.gameId),
+      orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
     });
 
-    // Get all votes for the game
+    if (!currentGameRound) {
+      throw new Error("No game rounds found for the current game");
+    }
+
+    const submissions = await ctx.db.query.submission.findMany({
+      where: eq(submission.gameRoundId, currentGameRound.id),
+    });
+
+    // Get all votes for these submissions
+    const submissionIds = submissions.map((s) => s.id);
     const votes = await ctx.db.query.vote.findMany({
-      where: eq(vote.gameId, sessionData.gameId),
+      where: (vote, { inArray }) => inArray(vote.submissionId, submissionIds),
     });
 
     // Aggregate votes per submission
-    const results = submissions.map((sub) => {
-      const subVotes = votes.filter((v) => v.submissionId === sub.id);
-      return {
-        submission: sub,
-        voteCount: subVotes.length,
-      };
+    const voteCountMap: Record<string, number> = {};
+    votes.forEach((v) => {
+      voteCountMap[v.submissionId] = (voteCountMap[v.submissionId] ?? 0) + 1;
     });
 
-    // Sort results by voteCount descending
-    results.sort((a, b) => b.voteCount - a.voteCount);
-
-    return { results };
+    return voteCountMap;
   }),
+
+  results: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // 1. Get all rounds for the game
+      const rounds = await ctx.db.query.gameRound.findMany({
+        where: eq(gameRound.gameId, input.gameId),
+        orderBy: (gameRound, { asc }) => [asc(gameRound.createdAt)],
+      });
+
+      // 2. For each round, get submissions and votes
+      const results = [];
+      for (const round of rounds) {
+        const submissions = await ctx.db.query.submission.findMany({
+          where: eq(submission.gameRoundId, round.id),
+        });
+
+        const submissionIds = submissions.map((s) => s.id);
+        const votes = await ctx.db.query.vote.findMany({
+          where: (vote, { inArray }) =>
+            inArray(vote.submissionId, submissionIds),
+        });
+
+        // Aggregate votes per submission
+        const voteCountMap: Record<string, number> = {};
+        votes.forEach((v) => {
+          voteCountMap[v.submissionId] =
+            (voteCountMap[v.submissionId] ?? 0) + 1;
+        });
+
+        results.push({
+          roundId: round.id,
+          roundContent: round.content,
+          submissions: submissions.map((sub) => ({
+            ...sub,
+            voteCount: voteCountMap[sub.id] ?? 0,
+          })),
+        });
+      }
+
+      return results;
+    }),
+
+  status: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const gameInstance = await ctx.db.query.game.findFirst({
+        where: eq(game.id, input.gameId),
+      });
+      if (!gameInstance) {
+        throw new Error("Game not found");
+      }
+
+      let latestRound = await ctx.db.query.gameRound.findFirst({
+        where: eq(gameRound.gameId, input.gameId),
+        orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
+      });
+
+      // Count rounds for this game
+      const rounds = await ctx.db.query.gameRound.findMany({
+        where: eq(gameRound.gameId, input.gameId),
+      });
+
+      // Only create a new round if less than 3 rounds exist
+      if (
+        latestRound &&
+        rounds.length < MAX_GAME_ROUNDS &&
+        new Date().getTime() - new Date(latestRound.createdAt).getTime() >
+          60_000
+      ) {
+        const randomIndex = Math.floor(
+          Math.random() * GAME_THEME_PROMPTS.length,
+        );
+        const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
+
+        const newRoundArr = await ctx.db
+          .insert(gameRound)
+          .values({
+            gameId: input.gameId,
+            content: randomPrompt,
+          })
+          .returning();
+
+        latestRound = newRoundArr[0];
+      }
+
+      return {
+        isActive: gameInstance.isActive,
+        latestRound: latestRound,
+      };
+    }),
 });
