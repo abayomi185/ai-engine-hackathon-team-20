@@ -20,7 +20,12 @@ export const gameRouter = createTRPCRouter({
     const randomIndex = Math.floor(Math.random() * GAME_THEME_PROMPTS.length);
     const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
 
+    if (!newGame[0]?.id) {
+      throw new Error("Failed to create a new game");
+    }
+
     await ctx.db.insert(gameRound).values({
+      gameId: newGame[0].id,
       content: randomPrompt,
     });
 
