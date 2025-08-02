@@ -24,20 +24,5 @@ A demonstration script showing how to use the Runware API to generate videos.
 ```bash
 # From the project root directory
 conda activate genai
-/Users/shayan/anaconda3/envs/genai/bin/python scripts/example_usage.py
-```
-
-**Note**: Due to PATH configuration, you may need to use the full path to the conda Python executable.
-
-## Troubleshooting
-
-If you encounter PATH issues with conda, you can add this to your shell configuration:
-```bash
-export PATH="/Users/shayan/anaconda3/envs/genai/bin:$PATH"
-```
-
-Then you can run scripts with:
-```bash
-conda activate genai
 python scripts/example_usage.py
-``` 
+```
