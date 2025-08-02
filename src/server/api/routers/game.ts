@@ -6,6 +6,8 @@ import { game, session, gameRound, vote, submission } from "~/server/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export const gameRouter = createTRPCRouter({
+  new: publicProcedure.query(async ({ ctx, input }) => {}),
+
   join: publicProcedure
     .input(z.object({ gameId: z.string() }))
     .query(async ({ ctx, input }) => {
