@@ -31,6 +31,7 @@ export const game = createTable(
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
     name: d.text().notNull(),
+    currentGameRound: d.integer().notNull().default(0),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
