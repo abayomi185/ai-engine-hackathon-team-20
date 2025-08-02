@@ -44,7 +44,10 @@ export const gameRound = createTable(
   "game_round",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    gameId: d.uuid().notNull(),
+    gameId: d
+      .uuid()
+      .notNull()
+      .references(() => game.id, { onDelete: "cascade" }),
     roundNumber: d.integer().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -59,7 +62,7 @@ export const session = createTable(
   "session",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    gameId: d.uuid(),
+    gameId: d.uuid().references(() => game.id, { onDelete: "set null" }),
     isPlayer: d.boolean().notNull().default(false),
     avatar: d.text().notNull().default(""),
     createdAt: d
@@ -74,8 +77,14 @@ export const submission = createTable(
   "submission",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sessionId: d.uuid().notNull(),
-    gameRound: d.uuid().notNull(),
+    sessionId: d
+      .uuid()
+      .notNull()
+      .references(() => session.id, { onDelete: "cascade" }),
+    gameRound: d
+      .uuid()
+      .notNull()
+      .references(() => gameRound.id, { onDelete: "cascade" }),
     content: d.text().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -92,8 +101,14 @@ export const vote = createTable(
   "vote",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    sessionId: d.uuid().notNull(),
-    gameRoundId: d.uuid().notNull(),
+    sessionId: d
+      .uuid()
+      .notNull()
+      .references(() => session.id, { onDelete: "cascade" }),
+    gameRoundId: d
+      .uuid()
+      .notNull()
+      .references(() => gameRound.id, { onDelete: "cascade" }),
     voteValue: d.integer().notNull(),
   }),
   (t) => [
