@@ -83,10 +83,7 @@ export const submission = createTable(
       .uuid()
       .notNull()
       .references(() => session.id, { onDelete: "cascade" }),
-    gameRound: d
-      .uuid()
-      .notNull()
-      .references(() => gameRound.id, { onDelete: "cascade" }),
+    gameRound: d.integer().notNull(),
     content: d.text().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
