@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { api } from "~/trpc/react";
 
-export function JoinGame() {
+export default function JoinGame() {
   const params = useParams();
   const gameId = params?.gameId;
 

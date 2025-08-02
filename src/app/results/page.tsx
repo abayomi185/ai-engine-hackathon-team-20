@@ -4,6 +4,6 @@ import { useState } from "react";
 
 import { api } from "~/trpc/react";
 
-export function Results() {
+export default function Results() {
   return <div className="w-full max-w-xs"></div>;
 }
