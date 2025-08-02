@@ -1,5 +1,5 @@
 {
-  "id": "88b8dd54-6200-47a8-ac91-235e679bd215",
+  "id": "716baf22-4fb5-465a-a8bb-f180ac65a7ff",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -20,6 +20,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "currentGameRound": {
+          "name": "currentGameRound",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "createdAt": {
           "name": "createdAt",
@@ -201,6 +208,12 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "gameId": {
           "name": "gameId",
           "type": "uuid",
@@ -286,7 +299,7 @@
         },
         "gameRound": {
           "name": "gameRound",
-          "type": "uuid",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -343,19 +356,6 @@
           "tableTo": "test_session",
           "columnsFrom": [
             "sessionId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "test_submission_gameRound_test_game_round_id_fk": {
-          "name": "test_submission_gameRound_test_game_round_id_fk",
-          "tableFrom": "test_submission",
-          "tableTo": "test_game_round",
-          "columnsFrom": [
-            "gameRound"
           ],
           "columnsTo": [
             "id"
