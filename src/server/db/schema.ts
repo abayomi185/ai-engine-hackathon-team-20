@@ -31,7 +31,6 @@ export const game = createTable(
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
     name: d.text().notNull(),
-    currentGameRound: d.integer().notNull().default(0),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -48,8 +47,8 @@ export const gameRound = createTable(
     gameId: d
       .uuid()
       .notNull()
+      .defaultRandom()
       .references(() => game.id, { onDelete: "cascade" }),
-    roundNumber: d.integer().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -83,7 +82,14 @@ export const submission = createTable(
       .uuid()
       .notNull()
       .references(() => session.id, { onDelete: "cascade" }),
-    gameRound: d.integer().notNull(),
+    gameId: d
+      .uuid()
+      .notNull()
+      .references(() => game.id, { onDelete: "cascade" }),
+    gameRoundId: d
+      .uuid()
+      .notNull()
+      .references(() => gameRound.id, { onDelete: "cascade" }),
     content: d.text().notNull(),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -92,7 +98,7 @@ export const submission = createTable(
   }),
   (t) => [
     index("submission_session_idx").on(t.sessionId),
-    index("submission_game_round_idx").on(t.gameRound),
+    index("submission_game_round_idx").on(t.gameRoundId),
   ],
 );
 
@@ -104,14 +110,13 @@ export const vote = createTable(
       .uuid()
       .notNull()
       .references(() => session.id, { onDelete: "cascade" }),
-    gameRoundId: d
+    submissionId: d
       .uuid()
       .notNull()
-      .references(() => gameRound.id, { onDelete: "cascade" }),
-    voteValue: d.integer().notNull(),
+      .references(() => submission.id, { onDelete: "cascade" }),
   }),
   (t) => [
     index("vote_session_idx").on(t.sessionId),
-    index("vote_game_round_idx").on(t.gameRoundId),
+    index("vote_submission_idx").on(t.submissionId),
   ],
 );
