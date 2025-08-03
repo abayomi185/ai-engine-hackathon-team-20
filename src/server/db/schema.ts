@@ -93,6 +93,7 @@ export const submission = createTable(
       .notNull()
       .references(() => gameRound.id, { onDelete: "cascade" }),
     content: d.text().notNull(),
+    result: d.text(),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)

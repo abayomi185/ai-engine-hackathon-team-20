@@ -1,0 +1,1 @@
+ALTER TABLE "test_submission" ADD COLUMN "result" text;

@@ -15,6 +15,13 @@
       "when": 1754209546249,
       "tag": "0001_spotty_unus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754212938335,
+      "tag": "0002_furry_juggernaut",
+      "breakpoints": true
     }
   ]
 }
