@@ -6,6 +6,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
+import { getCookie } from "cookies-next";
 
 import { type AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
@@ -54,12 +55,16 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
           url: getBaseUrl() + "/api/trpc",
           headers: () => {
             const headers = new Headers();
+
+            const sessionId = (getCookie("sessionId") ?? "") as string;
             headers.set("x-trpc-source", "nextjs-react");
+            headers.set("x-session-id", sessionId);
+
             return headers;
           },
         }),
       ],
-    })
+    }),
   );
 
   return (
