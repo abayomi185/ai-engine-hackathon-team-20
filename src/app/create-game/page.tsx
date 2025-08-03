@@ -4,17 +4,23 @@ import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
+import { useState } from "react";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3002";
 
 const QRCodeSection = () => {
-  const { data, isLoading, error } = api.game.new.useQuery();
-  const gameId = data?.id ?? "";
-  const qrValue = gameId ? `${baseUrl}/join-game/${gameId}` : "";
+  const [qrValue, setQrValue] = useState<string>("");
 
-  if (isLoading)
+  const newGameMutation = api.game.new.useMutation({
+    onSuccess: (data) => {
+      setQrValue(`${baseUrl}/join-game/${data.id}`);
+    },
+  });
+
+  if (newGameMutation.status === "idle" || newGameMutation.status === "pending")
     return <div className="py-8 text-center">Loading QR Code...</div>;
-  if (error || !data?.id)
+
+  if (newGameMutation.status === "error")
     return (
       <div className="py-8 text-center text-red-500">
         Failed to load QR Code.
