@@ -234,59 +234,45 @@ export const gameRouter = createTRPCRouter({
       return endGame[0];
     }),
 
-  roundResults: publicProcedure.query(async ({ ctx }) => {
-    const sessionId = ctx.headers.get("x-session-id");
-    if (!sessionId) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Session ID is required",
+  roundResults: publicProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const currentGameRound = await ctx.db.query.gameRound.findFirst({
+        where: eq(gameRound.gameId, input.gameId),
+        orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
       });
-    }
 
-    const sessionData = await ctx.db.query.session.findFirst({
-      where: eq(session.id, sessionId),
-    });
+      if (!currentGameRound) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No game rounds found for the current game",
+        });
+      }
 
-    if (!sessionData?.gameId) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
-    }
+      console.log("Current Game Round", currentGameRound);
 
-    const currentGameRound = await ctx.db.query.gameRound.findFirst({
-      where: eq(gameRound.gameId, sessionData.gameId),
-      orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
-    });
-
-    if (!currentGameRound) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "No game rounds found for the current game",
+      const submissions = await ctx.db.query.submission.findMany({
+        where: eq(submission.gameRoundId, currentGameRound.id),
       });
-    }
 
-    console.log("Current Game Round", currentGameRound);
+      console.log("Submissions", submissions);
 
-    const submissions = await ctx.db.query.submission.findMany({
-      where: eq(submission.gameRoundId, currentGameRound.id),
-    });
+      const submissionIds = submissions.map((s) => s.id);
+      const votes = await ctx.db.query.vote.findMany({
+        where: (vote, { inArray }) => inArray(vote.submissionId, submissionIds),
+      });
 
-    console.log("Submissions", submissions);
+      const voteCountMap: Record<string, number> = {};
+      votes.forEach((v) => {
+        voteCountMap[v.submissionId] = (voteCountMap[v.submissionId] ?? 0) + 1;
+      });
 
-    const submissionIds = submissions.map((s) => s.id);
-    const votes = await ctx.db.query.vote.findMany({
-      where: (vote, { inArray }) => inArray(vote.submissionId, submissionIds),
-    });
-
-    const voteCountMap: Record<string, number> = {};
-    votes.forEach((v) => {
-      voteCountMap[v.submissionId] = (voteCountMap[v.submissionId] ?? 0) + 1;
-    });
-
-    return {
-      submissions: submissions,
-      voteCountMap: voteCountMap,
-      gameRound: currentGameRound,
-    };
-  }),
+      return {
+        submissions: submissions,
+        voteCountMap: voteCountMap,
+        gameRound: currentGameRound,
+      };
+    }),
 
   results: publicProcedure
     .input(z.object({ gameId: z.string() }))
