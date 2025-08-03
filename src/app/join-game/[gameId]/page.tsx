@@ -4,14 +4,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useCookies } from "react-cookie";
 
 import { api } from "~/trpc/react";
+import { setCookie } from "cookies-next/client";
 
 export default function JoinGame() {
   const router = useRouter();
-
-  const [, setCookie] = useCookies(["sessionId", "gameId"]);
 
   const params = useParams();
   const gameId = params?.gameId?.toString() ?? "";
@@ -27,12 +25,12 @@ export default function JoinGame() {
       if (!data) return;
 
       setCookie("sessionId", data.id, {
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         path: "/",
-        expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
       });
       setCookie("gameId", data.gameId, {
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         path: "/",
-        expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
       });
 
       // Redirect to the game page after joining
