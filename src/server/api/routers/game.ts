@@ -5,11 +5,13 @@ import { game, session, gameRound, vote, submission } from "~/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { GAME_THEME_PROMPTS } from "~/server/constant/prompts";
 import { getRandomWord } from "~/server/constant/words";
+import { generateVideo } from "~/server/video-generation/runware";
 
 const MAX_GAME_ROUNDS = 3;
 
 export const gameRouter = createTRPCRouter({
-  new: publicProcedure.query(async ({ ctx }) => {
+  // FIX: Changed from .query to .mutation because it creates data
+  new: publicProcedure.mutation(async ({ ctx }) => {
     const newGame = await ctx.db
       .insert(game)
       .values({
@@ -92,8 +94,16 @@ export const gameRouter = createTRPCRouter({
       if (!sessionId) {
         throw new Error("Session ID is required");
       }
+      
+      const videoResult = await generateVideo(input.content);
 
-      await ctx.db.transaction(async (tx) => {
+      // FIX:videoResult Added error handling for the video generation
+      if (!videoResult.url) {
+        throw new Error("Failed to generate video for the submission");
+      }
+
+      // FIX: Added 'return' to send the result of the transaction to the client
+      return await ctx.db.transaction(async (tx) => {
         const sessionExists = await tx.query.session.findFirst({
           where: eq(session.id, sessionId),
         });
@@ -101,7 +111,7 @@ export const gameRouter = createTRPCRouter({
         if (!sessionExists?.gameId) {
           throw new Error("Session not found or does not have a gameId");
         }
-        // Check if game is active
+        
         const gameInstance = await tx.query.game.findFirst({
           where: eq(game.id, sessionExists.gameId),
         });
@@ -119,7 +129,6 @@ export const gameRouter = createTRPCRouter({
           throw new Error("No game rounds found for the current game");
         }
 
-        // Create a new submission
         const newSubmission = await tx
           .insert(submission)
           .values({
@@ -127,6 +136,7 @@ export const gameRouter = createTRPCRouter({
             content: input.content,
             gameId: gameInstance.id,
             gameRoundId: latestGameRound.id,
+            result: videoResult.url,
           })
           .returning();
 
@@ -150,7 +160,7 @@ export const gameRouter = createTRPCRouter({
         if (!sessionExists?.gameId) {
           throw new Error("Session not found or does not have a gameId");
         }
-        // Check if game is active
+        
         const gameInstance = await tx.query.game.findFirst({
           where: eq(game.id, sessionExists.gameId),
         });
@@ -209,13 +219,11 @@ export const gameRouter = createTRPCRouter({
       where: eq(submission.gameRoundId, currentGameRound.id),
     });
 
-    // Get all votes for these submissions
     const submissionIds = submissions.map((s) => s.id);
     const votes = await ctx.db.query.vote.findMany({
       where: (vote, { inArray }) => inArray(vote.submissionId, submissionIds),
     });
 
-    // Aggregate votes per submission
     const voteCountMap: Record<string, number> = {};
     votes.forEach((v) => {
       voteCountMap[v.submissionId] = (voteCountMap[v.submissionId] ?? 0) + 1;
@@ -227,13 +235,11 @@ export const gameRouter = createTRPCRouter({
   results: publicProcedure
     .input(z.object({ gameId: z.string() }))
     .query(async ({ ctx, input }) => {
-      // 1. Get all rounds for the game
       const rounds = await ctx.db.query.gameRound.findMany({
         where: eq(gameRound.gameId, input.gameId),
         orderBy: (gameRound, { asc }) => [asc(gameRound.createdAt)],
       });
 
-      // 2. For each round, get submissions and votes
       const results = [];
       for (const round of rounds) {
         const submissions = await ctx.db.query.submission.findMany({
@@ -246,7 +252,6 @@ export const gameRouter = createTRPCRouter({
             inArray(vote.submissionId, submissionIds),
         });
 
-        // Aggregate votes per submission
         const voteCountMap: Record<string, number> = {};
         votes.forEach((v) => {
           voteCountMap[v.submissionId] =
@@ -281,12 +286,10 @@ export const gameRouter = createTRPCRouter({
         orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
       });
 
-      // Count rounds for this game
       const rounds = await ctx.db.query.gameRound.findMany({
         where: eq(gameRound.gameId, input.gameId),
       });
 
-      // Only create a new round if less than 3 rounds exist
       if (
         latestRound &&
         rounds.length < MAX_GAME_ROUNDS &&
