@@ -10,9 +10,12 @@ export default function Results() {
   const params = useParams();
   const gameId = params?.gameId?.toString() ?? "";
 
-  const { data, isLoading, error } = api.game.roundResults.useQuery(undefined, {
-    enabled: !!gameId,
-  });
+  const { data, isLoading, error } = api.game.roundResults.useQuery(
+    { gameId },
+    {
+      enabled: !!gameId,
+    },
+  );
   const nextRound = api.game.next.useMutation();
   const [nextLoading, setNextLoading] = useState(false);
 
