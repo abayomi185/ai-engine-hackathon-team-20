@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { GAME_THEME_PROMPTS } from "~/server/constant/prompts";
 import { getRandomWord } from "~/server/constant/words";
 import { generateVideo } from "~/server/video-generation/runware";
+import { TRPCError } from "@trpc/server";
 
 const MAX_GAME_ROUNDS = 3;
 
@@ -22,7 +23,10 @@ export const gameRouter = createTRPCRouter({
     const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
 
     if (!newGame[0]?.id) {
-      throw new Error("Failed to create a new game");
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to create a new game",
+      });
     }
 
     await ctx.db.insert(gameRound).values({
@@ -41,7 +45,10 @@ export const gameRouter = createTRPCRouter({
         where: eq(game.id, input.gameId),
       });
       if (!gameInstance?.isActive) {
-        throw new Error("Game not found or not active");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found or not active",
+        });
       }
 
       // 2. Pick a random prompt
@@ -89,15 +96,22 @@ export const gameRouter = createTRPCRouter({
   submit: publicProcedure
     .input(z.object({ content: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const sessionId = ctx.headers.get("sessionId");
+      const sessionId = ctx.headers.get("x-session-id");
+
       if (!sessionId) {
-        throw new Error("Session ID is required");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Session ID is required",
+        });
       }
 
       const videoResult = await generateVideo(input.content);
 
       if (!videoResult.url) {
-        throw new Error("Failed to generate video for the submission");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate video for the submission",
+        });
       }
 
       return await ctx.db.transaction(async (tx) => {
@@ -106,7 +120,10 @@ export const gameRouter = createTRPCRouter({
         });
 
         if (!sessionExists?.gameId) {
-          throw new Error("Session not found or does not have a gameId");
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Session not found or does not have a gameId",
+          });
         }
 
         const gameInstance = await tx.query.game.findFirst({
@@ -114,7 +131,10 @@ export const gameRouter = createTRPCRouter({
         });
 
         if (!gameInstance?.isActive) {
-          throw new Error("Game is not active");
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Game is not active",
+          });
         }
 
         const latestGameRound = await ctx.db.query.gameRound.findFirst({
@@ -123,7 +143,23 @@ export const gameRouter = createTRPCRouter({
         });
 
         if (!latestGameRound) {
-          throw new Error("No game rounds found for the current game");
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No game rounds found for the current game",
+          });
+        }
+
+        const existingSubmission = await tx.query.submission.findFirst({
+          where:
+            eq(submission.sessionId, sessionId) &&
+            eq(submission.gameRoundId, latestGameRound.id),
+        });
+
+        if (existingSubmission) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Submission already exists for this session and round",
+          });
         }
 
         const newSubmission = await tx
@@ -144,9 +180,12 @@ export const gameRouter = createTRPCRouter({
   vote: publicProcedure
     .input(z.object({ submissionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const sessionId = ctx.headers.get("sessionId");
+      const sessionId = ctx.headers.get("x-sessionId");
       if (!sessionId) {
-        throw new Error("Session ID is required");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Session ID is required",
+        });
       }
 
       await ctx.db.transaction(async (tx) => {
@@ -155,7 +194,10 @@ export const gameRouter = createTRPCRouter({
         });
 
         if (!sessionExists?.gameId) {
-          throw new Error("Session not found or does not have a gameId");
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Session not found or does not have a gameId",
+          });
         }
 
         const gameInstance = await tx.query.game.findFirst({
@@ -163,7 +205,10 @@ export const gameRouter = createTRPCRouter({
         });
 
         if (!gameInstance?.isActive) {
-          throw new Error("Game is not active");
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Game is not active",
+          });
         }
 
         await tx.insert(vote).values({
@@ -183,16 +228,19 @@ export const gameRouter = createTRPCRouter({
         .returning();
 
       if (endGame.length === 0) {
-        throw new Error("Game not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
       return endGame[0];
     }),
 
   roundResults: publicProcedure.query(async ({ ctx }) => {
-    const sessionId = ctx.headers.get("sessionId");
+    const sessionId = ctx.headers.get("x-sessionId");
     if (!sessionId) {
-      throw new Error("Session ID is required");
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Session ID is required",
+      });
     }
 
     const sessionData = await ctx.db.query.session.findFirst({
@@ -200,7 +248,7 @@ export const gameRouter = createTRPCRouter({
     });
 
     if (!sessionData?.gameId) {
-      throw new Error("Session not found");
+      throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
     }
 
     const currentGameRound = await ctx.db.query.gameRound.findFirst({
@@ -209,7 +257,10 @@ export const gameRouter = createTRPCRouter({
     });
 
     if (!currentGameRound) {
-      throw new Error("No game rounds found for the current game");
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No game rounds found for the current game",
+      });
     }
 
     const submissions = await ctx.db.query.submission.findMany({
@@ -275,7 +326,7 @@ export const gameRouter = createTRPCRouter({
         where: eq(game.id, input.gameId),
       });
       if (!gameInstance) {
-        throw new Error("Game not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
       let latestRound = await ctx.db.query.gameRound.findFirst({
@@ -316,4 +367,3 @@ export const gameRouter = createTRPCRouter({
       };
     }),
 });
-
