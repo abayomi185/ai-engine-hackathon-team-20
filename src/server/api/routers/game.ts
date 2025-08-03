@@ -78,7 +78,7 @@ export const gameRouter = createTRPCRouter({
         ),
       });
 
-      const playerRoleIsAvailable = playerSessions.length < 2;
+      const playerRoleIsAvailable = playerSessions.length < 3;
 
       const newSession = await ctx.db
         .insert(session)
