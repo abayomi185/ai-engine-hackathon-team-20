@@ -1,0 +1,1 @@
+ALTER TABLE "test_session" ALTER COLUMN "gameId" SET NOT NULL;
