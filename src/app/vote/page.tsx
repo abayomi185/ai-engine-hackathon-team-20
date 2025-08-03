@@ -96,7 +96,7 @@ export default function Vote() {
   // Get submissions for current round (assuming they're in roundResults)
   const submissions = roundResults.data?.submissions ?? [];
 
-  if (submissions.length < 2) {
+  if (submissions.length < 3) {
     return (
       <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
         <div className="flex w-full max-w-md flex-col items-center rounded-xl bg-[#232045] p-8 shadow-lg">
