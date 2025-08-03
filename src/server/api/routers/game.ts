@@ -284,6 +284,7 @@ export const gameRouter = createTRPCRouter({
     return {
       submissions: submissions,
       voteCountMap: voteCountMap,
+      gameRound: currentGameRound,
     };
   }),
 
