@@ -62,7 +62,7 @@ export const gameRouter = createTRPCRouter({
 
   join: publicProcedure
     .input(z.object({ name: z.string(), gameId: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const playerSessions = await ctx.db.query.session.findMany({
         where: and(
           eq(session.gameId, input.gameId),
