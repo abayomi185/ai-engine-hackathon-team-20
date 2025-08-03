@@ -11,9 +11,15 @@ export default function Vote() {
     null,
   );
 
-  const gameStatus = api.game.status.useQuery({ gameId });
+  const gameStatus = api.game.status.useQuery(
+    { gameId },
+    {
+      refetchInterval: 10000,
+    },
+  );
   const roundResults = api.game.roundResults.useQuery(undefined, {
     enabled: !!sessionId,
+    refetchInterval: 10000,
   });
 
   useEffect(() => {
@@ -129,7 +135,14 @@ export default function Vote() {
                 {/* Video placeholder - replace with actual video component */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-gray-500">
-                    <video width="320" height="240" controls preload="none">
+                    <video
+                      width="320"
+                      height="240"
+                      autoPlay
+                      loop
+                      muted
+                      preload="metadata"
+                    >
                       <source src={submission.result!} type="video/mp4" />
                     </video>
                   </div>
