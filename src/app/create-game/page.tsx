@@ -7,8 +7,15 @@ import { Button } from "~/components/ui/button";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3002";
 
-const QRCodeSection = () => {
-  const { data, isLoading, error } = api.game.new.useQuery();
+const QRCodeSection = ({
+  data,
+  isLoading,
+  error,
+}: {
+  data?: { id?: string };
+  isLoading: boolean;
+  error: unknown;
+}) => {
   const gameId = data?.id ?? "";
   const qrValue = gameId ? `${baseUrl}/join-game/${gameId}` : "";
 
@@ -37,6 +44,9 @@ const QRCodeSection = () => {
 };
 
 export default function CreateGamePage() {
+  const { data, isLoading, error } = api.game.new.useQuery();
+
+  const gameId = data?.id ?? "";
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
       <div className="flex w-full max-w-md flex-col items-center rounded-xl bg-[#232045] p-8 shadow-lg">
@@ -44,9 +54,12 @@ export default function CreateGamePage() {
         <p className="mb-6 text-center text-gray-300">
           Share this QR code or link with your friends to join your game.
         </p>
-        <QRCodeSection />
+        <QRCodeSection data={data} isLoading={isLoading} error={error} />
         <Button asChild className="mx-auto mt-8 cursor-pointer">
           <Link href="/">Back to Home</Link>
+        </Button>
+        <Button asChild className="mx-auto mt-8 cursor-pointer">
+          <Link href={`/results/${gameId}`}>Go to Results</Link>
         </Button>
       </div>
     </main>
