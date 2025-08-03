@@ -323,36 +323,10 @@ export const gameRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
-      let latestRound = await ctx.db.query.gameRound.findFirst({
+      const latestRound = await ctx.db.query.gameRound.findFirst({
         where: eq(gameRound.gameId, input.gameId),
         orderBy: (gameRound, { desc }) => [desc(gameRound.createdAt)],
       });
-
-      const rounds = await ctx.db.query.gameRound.findMany({
-        where: eq(gameRound.gameId, input.gameId),
-      });
-
-      if (
-        latestRound &&
-        rounds.length < MAX_GAME_ROUNDS &&
-        new Date().getTime() - new Date(latestRound.createdAt).getTime() >
-          60_000
-      ) {
-        const randomIndex = Math.floor(
-          Math.random() * GAME_THEME_PROMPTS.length,
-        );
-        const randomPrompt = GAME_THEME_PROMPTS[randomIndex]!;
-
-        const newRoundArr = await ctx.db
-          .insert(gameRound)
-          .values({
-            gameId: input.gameId,
-            content: randomPrompt,
-          })
-          .returning();
-
-        latestRound = newRoundArr[0];
-      }
 
       return {
         isActive: gameInstance.isActive,
