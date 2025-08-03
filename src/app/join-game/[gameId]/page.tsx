@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 
 import { api } from "~/trpc/react";
 import { setCookie } from "cookies-next/client";
+import { AlertModal } from "~/components/AlertModal";
 
 export default function JoinGame() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function JoinGame() {
   const gameId = params?.gameId?.toString() ?? "";
   const gameStatus = api.game.status.useQuery({ gameId });
   const [playerName, setPlayerName] = useState("");
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const isLoading = gameStatus.isLoading;
   const error = gameStatus.error;
@@ -39,6 +42,10 @@ export default function JoinGame() {
         return;
       }
       router.push("/vote");
+    },
+    onError: (error) => {
+      setAlertMessage(error.message || "An error occurred.");
+      setIsAlertOpen(true);
     },
   });
 
@@ -87,6 +94,13 @@ export default function JoinGame() {
           Join Game
         </Button>
       </div>
+
+      <AlertModal
+        open={isAlertOpen}
+        onOpenChange={setIsAlertOpen}
+        title="Error"
+        description={alertMessage}
+      />
     </main>
   );
 }

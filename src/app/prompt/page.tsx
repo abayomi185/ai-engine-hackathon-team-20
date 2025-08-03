@@ -7,11 +7,14 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { api } from "~/trpc/react";
+import { AlertModal } from "~/components/AlertModal";
 
 export default function Prompt() {
   const router = useRouter();
 
   const [prompt, setPrompt] = useState("");
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const gameId = getCookie("gameId")?.toString() ?? "";
 
@@ -20,6 +23,10 @@ export default function Prompt() {
   const submitGameMutation = api.game.submit.useMutation({
     onSuccess: (_data) => {
       void router.push("/vote");
+    },
+    onError: (error) => {
+      setAlertMessage(error.message || "An error occurred.");
+      setIsAlertOpen(true);
     },
   });
 
@@ -56,6 +63,12 @@ export default function Prompt() {
           </div>
         </div>
       </div>
+      <AlertModal
+        open={isAlertOpen}
+        onOpenChange={setIsAlertOpen}
+        title="Error"
+        description={alertMessage}
+      />
     </main>
   );
 }
