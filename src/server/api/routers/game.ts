@@ -149,16 +149,16 @@ export const gameRouter = createTRPCRouter({
           });
         }
 
-        const existingSubmission = await tx.query.submission.findFirst({
+        const submissionCount = await tx.query.submission.findMany({
           where:
             eq(submission.sessionId, sessionId) &&
             eq(submission.gameRoundId, latestGameRound.id),
         });
 
-        if (existingSubmission) {
+        if (submissionCount.length >= 2) {
           throw new TRPCError({
-            code: "CONFLICT",
-            message: "Submission already exists for this session and round",
+            code: "FORBIDDEN",
+            message: "Maximum of 2 submissions allowed per session and round",
           });
         }
 
