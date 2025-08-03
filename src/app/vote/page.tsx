@@ -17,10 +17,13 @@ export default function Vote() {
       refetchInterval: 10000,
     },
   );
-  const roundResults = api.game.roundResults.useQuery(undefined, {
-    enabled: !!sessionId,
-    refetchInterval: 10000,
-  });
+  const roundResults = api.game.roundResults.useQuery(
+    { gameId },
+    {
+      enabled: !!sessionId,
+      refetchInterval: 10000,
+    },
+  );
 
   useEffect(() => {
     console.log("Round results updated:", roundResults.data);
