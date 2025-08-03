@@ -10,8 +10,7 @@ import { generateVideo } from "~/server/video-generation/runware";
 const MAX_GAME_ROUNDS = 3;
 
 export const gameRouter = createTRPCRouter({
-  // FIX: Changed from .query to .mutation because it creates data
-  new: publicProcedure.mutation(async ({ ctx }) => {
+  new: publicProcedure.query(async ({ ctx }) => {
     const newGame = await ctx.db
       .insert(game)
       .values({
@@ -94,15 +93,13 @@ export const gameRouter = createTRPCRouter({
       if (!sessionId) {
         throw new Error("Session ID is required");
       }
-      
+
       const videoResult = await generateVideo(input.content);
 
-      // FIX:videoResult Added error handling for the video generation
       if (!videoResult.url) {
         throw new Error("Failed to generate video for the submission");
       }
 
-      // FIX: Added 'return' to send the result of the transaction to the client
       return await ctx.db.transaction(async (tx) => {
         const sessionExists = await tx.query.session.findFirst({
           where: eq(session.id, sessionId),
@@ -111,7 +108,7 @@ export const gameRouter = createTRPCRouter({
         if (!sessionExists?.gameId) {
           throw new Error("Session not found or does not have a gameId");
         }
-        
+
         const gameInstance = await tx.query.game.findFirst({
           where: eq(game.id, sessionExists.gameId),
         });
@@ -160,7 +157,7 @@ export const gameRouter = createTRPCRouter({
         if (!sessionExists?.gameId) {
           throw new Error("Session not found or does not have a gameId");
         }
-        
+
         const gameInstance = await tx.query.game.findFirst({
           where: eq(game.id, sessionExists.gameId),
         });
@@ -315,7 +312,8 @@ export const gameRouter = createTRPCRouter({
       return {
         isActive: gameInstance.isActive,
         game: gameInstance,
-        latestRound: latestRound,
+        gameRound: latestRound,
       };
     }),
 });
+
