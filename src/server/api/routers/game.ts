@@ -180,7 +180,7 @@ export const gameRouter = createTRPCRouter({
   vote: publicProcedure
     .input(z.object({ submissionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const sessionId = ctx.headers.get("x-sessionId");
+      const sessionId = ctx.headers.get("x-session-id");
       if (!sessionId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -235,7 +235,7 @@ export const gameRouter = createTRPCRouter({
     }),
 
   roundResults: publicProcedure.query(async ({ ctx }) => {
-    const sessionId = ctx.headers.get("x-sessionId");
+    const sessionId = ctx.headers.get("x-session-id");
     if (!sessionId) {
       throw new TRPCError({
         code: "BAD_REQUEST",
@@ -263,9 +263,13 @@ export const gameRouter = createTRPCRouter({
       });
     }
 
+    console.log("Current Game Round", currentGameRound);
+
     const submissions = await ctx.db.query.submission.findMany({
       where: eq(submission.gameRoundId, currentGameRound.id),
     });
+
+    console.log("Submissions", submissions);
 
     const submissionIds = submissions.map((s) => s.id);
     const votes = await ctx.db.query.vote.findMany({
@@ -277,7 +281,10 @@ export const gameRouter = createTRPCRouter({
       voteCountMap[v.submissionId] = (voteCountMap[v.submissionId] ?? 0) + 1;
     });
 
-    return voteCountMap;
+    return {
+      submissions: submissions,
+      voteCountMap: voteCountMap,
+    };
   }),
 
   results: publicProcedure

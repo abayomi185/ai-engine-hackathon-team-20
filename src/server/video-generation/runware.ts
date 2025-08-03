@@ -6,6 +6,7 @@ export const generateVideo = async (
   success: boolean;
   url?: string;
 }> => {
+  console.log("Generating video with Runware...");
   const runware = new Runware({ apiKey: process.env.RUNWARE_API_KEY! });
 
   const videos = await runware.videoInference({
@@ -17,8 +18,11 @@ export const generateVideo = async (
     fps: 24, // Frames per second
   });
 
+  console.log("Generating video");
+
   let video: IVideoToImage;
   if (Array.isArray(videos) && videos.length > 0 && videos[0] !== undefined) {
+    console.error("Video generation successful");
     video = videos[0];
 
     return {
@@ -29,4 +33,3 @@ export const generateVideo = async (
 
   return { success: false };
 };
-

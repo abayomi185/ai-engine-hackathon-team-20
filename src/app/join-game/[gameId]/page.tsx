@@ -15,6 +15,7 @@ export default function JoinGame() {
   const params = useParams();
   const gameId = params?.gameId?.toString() ?? "";
   const gameStatus = api.game.status.useQuery({ gameId });
+
   const [playerName, setPlayerName] = useState("");
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
