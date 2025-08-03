@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/router";
+import { getCookie } from "cookies-next/client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -9,7 +10,12 @@ import { api } from "~/trpc/react";
 
 export default function Prompt() {
   const router = useRouter();
+
   const [prompt, setPrompt] = useState("");
+
+  const gameId = getCookie("gameId")?.toString() ?? "";
+
+  const gameStatus = api.game.status.useQuery({ gameId });
 
   const submitGameMutation = api.game.submit.useMutation({
     onSuccess: (_data) => {
@@ -29,7 +35,9 @@ export default function Prompt() {
           Describe what you want to generate below.
         </p>
         <div className="grid w-full max-w-sm items-center gap-2">
-          <Label htmlFor="prompt-input">Prompt</Label>
+          <Label htmlFor="prompt-input">
+            {gameStatus.data?.gameRound?.content}
+          </Label>
           <div className="flex w-full max-w-sm items-center space-x-2">
             <Input
               type="text"
@@ -38,7 +46,11 @@ export default function Prompt() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />
-            <Button type="submit" onClick={handleSubmit}>
+            <Button
+              type="submit"
+              className="cursor-pointer"
+              onClick={handleSubmit}
+            >
               Generate
             </Button>
           </div>
